@@ -1,13 +1,22 @@
-package main
+package clientvault
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/patric-chuzhbe/gophkeeper/internal/config"
+
+	//"github.com/patric-chuzhbe/gophkeeper/cmd/client"
+
 	//"github.com/patric-chuzhbe/gophkeeper/internal/config"
+	"github.com/patric-chuzhbe/gophkeeper/internal/clientcrypto"
 	"io"
 	"net/http"
 )
+
+type Vault struct {
+	config *config.Config
+}
 
 type VaultRecord struct {
 	Type  string            `json:"type"`
@@ -16,11 +25,15 @@ type VaultRecord struct {
 	Nonce []byte            `json:"nonce"`
 }
 
-func AddRecord(password string, record VaultRecord) error {
-	salt := []byte("static-salt") // Для демонстрации — заменить на динамический!
-	key := DeriveKey([]byte(password), salt)
+func New(config *config.Config) *Vault {
+	return &Vault{config: config}
+}
 
-	nonce, encrypted, err := Encrypt(record.Data, key)
+func (v *Vault) AddRecord(password string, record VaultRecord) error {
+	salt := []byte("static-salt") // Для демонстрации — заменить на динамический!
+	key := clientcrypto.DeriveKey([]byte(password), salt)
+
+	nonce, encrypted, err := clientcrypto.Encrypt(record.Data, key)
 	if err != nil {
 		return err
 	}
@@ -28,7 +41,7 @@ func AddRecord(password string, record VaultRecord) error {
 	record.Nonce = nonce
 
 	body, _ := json.Marshal(record)
-	resp, err := http.Post(app.config.ServerURL+"/vault", "application/json", bytes.NewReader(body))
+	resp, err := http.Post(v.config.ServerURL+"/vault", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
