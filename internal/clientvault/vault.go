@@ -4,18 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+
 	"github.com/patric-chuzhbe/gophkeeper/internal/config"
 
-	//"github.com/patric-chuzhbe/gophkeeper/cmd/client"
-
-	//"github.com/patric-chuzhbe/gophkeeper/internal/config"
-	"github.com/patric-chuzhbe/gophkeeper/internal/clientcrypto"
-	"io"
 	"net/http"
 )
 
 type Vault struct {
-	config *config.Config
+	config    *config.Config
+	serverURL string
+	crypto    cryptographer
 }
 
 type VaultRecord struct {
@@ -25,15 +24,21 @@ type VaultRecord struct {
 	Nonce []byte            `json:"nonce"`
 }
 
-func New(config *config.Config) *Vault {
-	return &Vault{config: config}
+type cryptographer interface {
+	DeriveKey(password, salt []byte) []byte
+	Encrypt(plaintext []byte, key []byte) ([]byte, []byte, error)
+	Decrypt(ciphertext []byte, nonce []byte, key []byte) ([]byte, error)
+}
+
+func New(serverURL string, crypto cryptographer) *Vault {
+	return &Vault{serverURL: serverURL, crypto: crypto}
 }
 
 func (v *Vault) AddRecord(password string, record VaultRecord) error {
-	salt := []byte("static-salt") // Для демонстрации — заменить на динамический!
-	key := clientcrypto.DeriveKey([]byte(password), salt)
+	salt := []byte("static-salt") // TODO: Для демонстрации — заменить на динамический!
+	key := v.crypto.DeriveKey([]byte(password), salt)
 
-	nonce, encrypted, err := clientcrypto.Encrypt(record.Data, key)
+	nonce, encrypted, err := v.crypto.Encrypt(record.Data, key)
 	if err != nil {
 		return err
 	}
@@ -41,7 +46,7 @@ func (v *Vault) AddRecord(password string, record VaultRecord) error {
 	record.Nonce = nonce
 
 	body, _ := json.Marshal(record)
-	resp, err := http.Post(v.config.ServerURL+"/vault", "application/json", bytes.NewReader(body))
+	resp, err := http.Post(v.serverURL+"/vault", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -54,4 +59,32 @@ func (v *Vault) AddRecord(password string, record VaultRecord) error {
 
 	fmt.Println("Record stored successfully.")
 	return nil
+}
+
+func (v *Vault) FetchRecords(password string) ([]VaultRecord, error) {
+	resp, err := http.Get(v.serverURL + "/vault")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var encryptedRecords []VaultRecord
+	if err := json.NewDecoder(resp.Body).Decode(&encryptedRecords); err != nil {
+		return nil, err
+	}
+
+	salt := []byte("static-salt") // В будущем — из БД
+	key := v.crypto.DeriveKey([]byte(password), salt)
+
+	var decrypted []VaultRecord
+	for _, rec := range encryptedRecords {
+		plaintext, err := v.crypto.Decrypt(rec.Data, rec.Nonce, key)
+		if err != nil {
+			continue // TODO: можно логировать
+		}
+		rec.Data = plaintext
+		decrypted = append(decrypted, rec)
+	}
+
+	return decrypted, nil
 }

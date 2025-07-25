@@ -1,9 +1,12 @@
 package main
 
 import (
-	"github.com/patric-chuzhbe/gophkeeper/client/commands"
-	"github.com/patric-chuzhbe/gophkeeper/internal/config"
 	"log"
+
+	"github.com/patric-chuzhbe/gophkeeper/internal/clientcli"
+	"github.com/patric-chuzhbe/gophkeeper/internal/clientcrypto"
+	"github.com/patric-chuzhbe/gophkeeper/internal/clientvault"
+	"github.com/patric-chuzhbe/gophkeeper/internal/config"
 )
 
 type App struct {
@@ -20,5 +23,15 @@ func main() {
 	app = &App{
 		config: cfg,
 	}
-	commands.Execute()
+
+	crypto := clientcrypto.New()
+
+	cli := clientcli.New(
+		clientvault.New(
+			app.config.ServerURL,
+			crypto,
+		),
+	)
+
+	cli.Execute()
 }

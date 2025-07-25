@@ -6,30 +6,56 @@ import (
 	"os"
 	"strings"
 
-	//"bufio"
-	//"fmt"
-	//"github.com/patric-chuzhbe/gophkeeper/internal/config"
+	"github.com/patric-chuzhbe/gophkeeper/internal/version"
+
 	"github.com/patric-chuzhbe/gophkeeper/internal/clientvault"
 	"github.com/spf13/cobra"
-	//"os"
 )
 
 type CLI struct {
-	rootCmd       *cobra.Command
-	vault         vault
-	cryptographer cryptographer
+	rootCmd *cobra.Command
+	vault   vault
 }
 
 type vault interface {
 	AddRecord(password string, record clientvault.VaultRecord) error
+	FetchRecords(password string) ([]clientvault.VaultRecord, error)
 }
 
-type cryptographer interface {
-	DeriveKey(password, salt []byte) []byte
-	Encrypt(plaintext []byte, key []byte) ([]byte, []byte, error)
+func New(vault vault) *CLI {
+	cli := &CLI{
+		vault: vault,
+		rootCmd: &cobra.Command{
+			Use:   "vault-cli",
+			Short: "Secure CLI client for managing encrypted data",
+		},
+	}
+
+	cli.rootCmd.AddCommand(&cobra.Command{
+		Use:   "add",
+		Short: "Add a new secure record",
+		Run:   cli.Add,
+	})
+
+	cli.rootCmd.AddCommand(&cobra.Command{
+		Use:   "get",
+		Short: "Fetch and decrypt records from server",
+		Run:   cli.Get,
+	})
+
+	cli.rootCmd.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Print version and build date",
+		Run:   cli.Version,
+	})
+
+	return cli
 }
 
-/*< new methods>*/
+func (c *CLI) Execute() {
+	cobra.CheckErr(c.rootCmd.Execute())
+}
+
 func (c *CLI) Add(cmd *cobra.Command, args []string) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Master password: ")
@@ -61,27 +87,32 @@ func (c *CLI) Add(cmd *cobra.Command, args []string) {
 	}
 }
 
-func (c *CLI) Execute() {
-	cobra.CheckErr(c.rootCmd.Execute())
-}
+func (c *CLI) Get(cmd *cobra.Command, args []string) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Master password: ")
+	password, _ := reader.ReadString('\n')
+	password = password[:len(password)-1]
 
-func New(vault vault, cryptographer cryptographer) *CLI {
-	cli := &CLI{
-		vault:         vault,
-		cryptographer: cryptographer,
-		rootCmd: &cobra.Command{
-			Use:   "vault-cli",
-			Short: "Secure CLI client for managing encrypted data",
-		},
+	records, err := c.vault.FetchRecords(password)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
 	}
 
-	cli.rootCmd.AddCommand(&cobra.Command{
-		Use:   "add",
-		Short: "Add a new secure record",
-		Run:   cli.Add,
-	})
+	if len(records) == 0 {
+		fmt.Println("No accessible records.")
+		return
+	}
 
-	return cli
+	for i, r := range records {
+		fmt.Printf("\n[%d] Type: %s\n", i+1, r.Type)
+		for k, v := range r.Meta {
+			fmt.Printf("  %s: %s\n", k, v)
+		}
+		fmt.Printf("  Decrypted Data: %s\n", string(r.Data))
+	}
 }
 
-/*</new methods>*/
+func (c *CLI) Version(cmd *cobra.Command, args []string) {
+	fmt.Println(version.Info())
+}

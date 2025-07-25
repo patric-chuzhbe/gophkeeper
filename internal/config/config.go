@@ -2,14 +2,10 @@ package config
 
 import (
 	"encoding/json"
-	"flag"
-	"fmt"
+
 	"log"
-	"net"
-	"net/url"
 	"os"
 	"reflect"
-	"time"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
@@ -20,46 +16,15 @@ import (
 // Config holds the application configuration loaded from environment variables
 // and optionally overridden by command-line flags.
 type Config struct {
-	ServerURL string `env:"SERVER_URL" validate:"url" json:"server_url`
-	//RunAddr                    string        `env:"SERVER_ADDRESS" validate:"hostname_port" json:"server_address"`   // Server address and port (e.g., ":8080")
-	//ShortURLBase               string        `env:"BASE_URL" validate:"url" json:"base_url"`                         // Base URL used to build short URLs
-	//LogLevel                   string        `env:"LOG_LEVEL"  validate:"loglevel"`                                  // Logging level (e.g., "info", "debug")
-	//DBFileName                 string        `env:"FILE_STORAGE_PATH"  validate:"filepath" json:"file_storage_path"` // Path to the JSON file storage (used if no DB DSN)
-	//DatabaseDSN                string        `env:"DATABASE_DSN" json:"database_dsn"`                                // DSN for PostgreSQL database connection
-	//DBConnectionTimeout        time.Duration `env:"DB_CONNECTION_TIMEOUT"`                                           // Timeout for DB connection attempts
-	//AuthCookieName             string        `env:"AUTH_COOKIE_NAME"`                                                // Name of the authentication cookie
-	//AuthCookieSigningSecretKey string        `env:"AUTH_COOKIE_SIGNING_SECRET_KEY"`                                  // Secret key for signing auth cookies
-	//ChannelCapacity            int           `env:"CHANNEL_CAPACITY"`                                                // Channel capacity for background jobs
-	//DelayBetweenQueueFetches   time.Duration `env:"DELAY_BETWEEN_QUEUE_FETCHES"`                                     // Delay between attempts to dequeue jobs
-	//MigrationsDir              string        `env:"MIGRATIONS_DIR"`                                                  // Directory path for database migration files
-	//EnableHTTPS                bool          `env:"ENABLE_HTTPS"  json:"enable_https"`
-	//CertFile                   string        `env:"CERT_FILE"`
-	//KeyFile                    string        `env:"KEY_FILE"`
-	//JSONConfigFilePath         string        `env:"CONFIG"`
-	//TrustedSubnet              string        `env:"TRUSTED_SUBNET" json:"trusted_subnet"`
-	//GRPCEnabled                bool          `env:"GRPC_ENABLED"`
-	//GRPCAddress                string        `env:"GRPC_ADDRESS"`
+	ServerURL     string `env:"SERVER_URL" validate:"url" json:"server_url"`
+	GRPCAddress   string `env:"GRPC_ADDRESS" json:"grpc_address"`
+	MigrationsDir string `env:"MIGRATIONS_DIR" json:"migrations_dir"`
 }
 
 var defaultConfig = Config{
-	ServerURL: "http://localhost:8080",
-	//RunAddr:                    ":8080",
-	//ShortURLBase:               "http://localhost:8080",
-	//LogLevel:                   "info",
-	//DBFileName:                 "",
-	//DBConnectionTimeout:        10 * time.Second,
-	//AuthCookieName:             "auth",
-	//AuthCookieSigningSecretKey: "LduYtmp2gWSRuyQyRHqbog==",
-	//ChannelCapacity:            1024,
-	//DelayBetweenQueueFetches:   5 * time.Second,
-	//MigrationsDir:              "migrations",
-	//EnableHTTPS:                false,
-	//CertFile:                   "../../cert/cert.pem",
-	//KeyFile:                    "../../cert/key.pem",
-	//JSONConfigFilePath:         "config.json",
-	//TrustedSubnet:              "127.0.0.0/8",
-	//GRPCEnabled:                false,
-	//GRPCAddress:                ":50051",
+	ServerURL:     "http://localhost:8080",
+	GRPCAddress:   ":50051",
+	MigrationsDir: "migrations",
 }
 
 type initOptions struct {
@@ -91,18 +56,7 @@ func New(optionsProto ...InitOption) (*Config, error) {
 
 	applyDefaults(config, defaultConfig)
 
-	err = config.clarifyRunAddr()
-	if err != nil {
-		return nil, err
-	}
-
-	err = config.clarifyShortURLBase()
-	if err != nil {
-		return nil, err
-	}
-
 	return config, config.Validate()
-
 }
 
 // Validate validates the configuration struct fields using custom and built-in rules.
@@ -120,46 +74,6 @@ func (conf *Config) Validate() error {
 	}
 
 	return validate.Struct(conf)
-}
-
-func (conf *Config) clarifyRunAddr() error {
-	host, port, err := net.SplitHostPort(conf.RunAddr)
-	if err != nil {
-		return fmt.Errorf("in internal/config/config.go/clarifyRunAddr(): error while `net.SplitHostPort()` calling: %w", err)
-	}
-
-	if conf.EnableHTTPS && (port == "8080" || port == "80") {
-		port = "443"
-	}
-
-	conf.RunAddr = net.JoinHostPort(host, port)
-
-	return nil
-}
-
-func (conf *Config) clarifyShortURLBase() error {
-	if !conf.EnableHTTPS {
-		return nil
-	}
-
-	parsed, err := url.Parse(conf.ShortURLBase)
-	if err != nil {
-		return fmt.Errorf("in internal/config/config.go/clarifyShortURLBase(): error while `url.Parse()` calling: %w", err)
-	}
-
-	host := parsed.Hostname()
-	port := parsed.Port()
-
-	switch port {
-	case "443", "80", "8080":
-		port = ""
-	case "":
-	default:
-		port = ":" + port
-	}
-
-	conf.ShortURLBase = fmt.Sprintf("https://%s%s", host, port)
-	return nil
 }
 
 // InitOption is a functional option type for configuring New().
