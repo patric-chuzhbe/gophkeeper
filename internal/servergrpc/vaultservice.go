@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/patric-chuzhbe/gophkeeper/internal/auth"
 	pb "github.com/patric-chuzhbe/gophkeeper/internal/servergrpc/proto"
 	"github.com/patric-chuzhbe/gophkeeper/internal/serverstorage/postgresdb"
 )
@@ -16,14 +17,29 @@ type VaultServer struct {
 	db *postgresdb.PostgresDB
 }
 
+/*< new funcs>*/
+func (s *VaultServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	userID, err := s.db.Authenticate(ctx, req.Login, req.Password)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "auth fault")
+	}
+
+	token, err := auth.GenerateToken(userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate token")
+	}
+
+	return &pb.LoginResponse{Token: token}, nil
+}
+
 func NewVaultServer(db *postgresdb.PostgresDB) *VaultServer {
 	return &VaultServer{db: db}
 }
 
 func (s *VaultServer) AddRecord(ctx context.Context, req *pb.AddRecordRequest) (*pb.AddRecordResponse, error) {
-	userID, err := s.db.Authenticate(ctx, req.Login, req.Password)
+	userID, err := auth.ParseToken(req.Token)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "auth fault")
+		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 	}
 
 	tx, err := s.db.BeginTransaction()
@@ -47,9 +63,9 @@ func (s *VaultServer) AddRecord(ctx context.Context, req *pb.AddRecordRequest) (
 }
 
 func (s *VaultServer) GetRecords(ctx context.Context, req *pb.GetRecordsRequest) (*pb.GetRecordsResponse, error) {
-	userID, err := s.db.Authenticate(ctx, req.Login, req.Password)
+	userID, err := auth.ParseToken(req.Token)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "auth fault")
+		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 	}
 
 	records, err := s.db.GetUserRecords(ctx, userID)
@@ -68,3 +84,5 @@ func (s *VaultServer) GetRecords(ctx context.Context, req *pb.GetRecordsRequest)
 
 	return result, nil
 }
+
+/*</new funcs>*/

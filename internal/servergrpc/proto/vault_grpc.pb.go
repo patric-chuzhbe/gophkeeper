@@ -8,6 +8,7 @@ package proto
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	VaultService_Login_FullMethodName      = "/vault.VaultService/Login"
 	VaultService_AddRecord_FullMethodName  = "/vault.VaultService/AddRecord"
 	VaultService_GetRecords_FullMethodName = "/vault.VaultService/GetRecords"
 )
@@ -27,6 +29,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type VaultServiceClient interface {
+	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	AddRecord(ctx context.Context, in *AddRecordRequest, opts ...grpc.CallOption) (*AddRecordResponse, error)
 	GetRecords(ctx context.Context, in *GetRecordsRequest, opts ...grpc.CallOption) (*GetRecordsResponse, error)
 }
@@ -37,6 +40,16 @@ type vaultServiceClient struct {
 
 func NewVaultServiceClient(cc grpc.ClientConnInterface) VaultServiceClient {
 	return &vaultServiceClient{cc}
+}
+
+func (c *vaultServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, VaultService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *vaultServiceClient) AddRecord(ctx context.Context, in *AddRecordRequest, opts ...grpc.CallOption) (*AddRecordResponse, error) {
@@ -63,6 +76,7 @@ func (c *vaultServiceClient) GetRecords(ctx context.Context, in *GetRecordsReque
 // All implementations must embed UnimplementedVaultServiceServer
 // for forward compatibility.
 type VaultServiceServer interface {
+	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	AddRecord(context.Context, *AddRecordRequest) (*AddRecordResponse, error)
 	GetRecords(context.Context, *GetRecordsRequest) (*GetRecordsResponse, error)
 	mustEmbedUnimplementedVaultServiceServer()
@@ -75,6 +89,9 @@ type VaultServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedVaultServiceServer struct{}
 
+func (UnimplementedVaultServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
+}
 func (UnimplementedVaultServiceServer) AddRecord(context.Context, *AddRecordRequest) (*AddRecordResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddRecord not implemented")
 }
@@ -100,6 +117,24 @@ func RegisterVaultServiceServer(s grpc.ServiceRegistrar, srv VaultServiceServer)
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&VaultService_ServiceDesc, srv)
+}
+
+func _VaultService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VaultServiceServer).Login(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VaultService_Login_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VaultServiceServer).Login(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _VaultService_AddRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -145,6 +180,10 @@ var VaultService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "vault.VaultService",
 	HandlerType: (*VaultServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Login",
+			Handler:    _VaultService_Login_Handler,
+		},
 		{
 			MethodName: "AddRecord",
 			Handler:    _VaultService_AddRecord_Handler,

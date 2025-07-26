@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/patric-chuzhbe/gophkeeper/internal/version"
-
 	"github.com/spf13/cobra"
+
+	"github.com/patric-chuzhbe/gophkeeper/internal/version"
 
 	"github.com/patric-chuzhbe/gophkeeper/internal/clientvault"
 )
@@ -19,15 +19,28 @@ type CLI struct {
 }
 
 type vault interface {
-	AddRecord(login string, password string, record clientvault.VaultRecord) error
-	FetchRecords(login string, password string) ([]clientvault.VaultRecord, error)
+	AddRecord(record clientvault.VaultRecord) error
+	FetchRecords() ([]clientvault.VaultRecord, error)
+	Login(login string, password string) error
+}
+
+/*< new funcs>*/
+
+func (c *CLI) Login(cmd *cobra.Command, args []string) {
+	reader := bufio.NewReader(os.Stdin)
+	login := readLine(reader, "Login: ")
+	password := readLine(reader, "Password: ")
+
+	if err := c.vault.Login(login, password); err != nil {
+		fmt.Println("Login failed:", err)
+	}
 }
 
 func New(vault vault) *CLI {
 	cli := &CLI{
 		vault: vault,
 		rootCmd: &cobra.Command{
-			Use:   "vault-cli",
+			Use:   "client",
 			Short: "Secure CLI client for managing encrypted data",
 		},
 	}
@@ -50,6 +63,12 @@ func New(vault vault) *CLI {
 		Run:   cli.Version,
 	})
 
+	cli.rootCmd.AddCommand(&cobra.Command{
+		Use:   "login",
+		Short: "Authenticate and get token",
+		Run:   cli.Login,
+	})
+
 	return cli
 }
 
@@ -60,8 +79,6 @@ func (c *CLI) Execute() {
 func (c *CLI) Add(cmd *cobra.Command, args []string) {
 	reader := bufio.NewReader(os.Stdin)
 
-	login := readLine(reader, "Login: ")
-	password := readLine(reader, "Password: ")
 	typ := readLine(reader, "Type (e.g. login_password): ")
 	metaStr := readLine(reader, "Meta (e.g. website=example.com): ")
 	data := readLine(reader, "Data to encrypt: ")
@@ -77,18 +94,13 @@ func (c *CLI) Add(cmd *cobra.Command, args []string) {
 		Data: []byte(data),
 	}
 
-	if err := c.vault.AddRecord(login, password, rec); err != nil {
+	if err := c.vault.AddRecord(rec); err != nil {
 		fmt.Println("Error:", err)
 	}
 }
 
 func (c *CLI) Get(cmd *cobra.Command, args []string) {
-	reader := bufio.NewReader(os.Stdin)
-
-	login := readLine(reader, "Login: ")
-	password := readLine(reader, "Password: ")
-
-	records, err := c.vault.FetchRecords(login, password)
+	records, err := c.vault.FetchRecords()
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
@@ -117,3 +129,5 @@ func readLine(r *bufio.Reader, prompt string) string {
 	line, _ := r.ReadString('\n')
 	return strings.TrimSpace(line)
 }
+
+/*</new funcs>*/

@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/patric-chuzhbe/gophkeeper/internal/config"
-
 	"google.golang.org/grpc"
 
 	pb "github.com/patric-chuzhbe/gophkeeper/internal/servergrpc/proto"
 )
 
 type Vault struct {
-	config *config.Config
-	crypto cryptographer
-	client pb.VaultServiceClient
+	crypto   cryptographer
+	client   pb.VaultServiceClient
+	token    string
+	password string
 }
 
 type VaultRecord struct {
@@ -31,16 +30,53 @@ type cryptographer interface {
 	Decrypt(ciphertext []byte, nonce []byte, key []byte) ([]byte, error)
 }
 
+/*< new funcs>*/
+
+func (v *Vault) Login(login string, password string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := v.client.Login(ctx, &pb.LoginRequest{
+		Login:    login,
+		Password: password,
+	})
+	if err != nil {
+		return err
+	}
+
+	v.token = resp.Token
+
+	if err := SaveSession(resp.Token, password); err != nil {
+		fmt.Println("Warning: token not saved to disk:", err)
+	} else {
+		fmt.Println("Token saved")
+	}
+
+	fmt.Println("Login successful.")
+	return nil
+}
+
+func (v *Vault) SetToken(token string) {
+	v.token = token
+}
+
 func New(crypto cryptographer, grpcConn *grpc.ClientConn) *Vault {
-	return &Vault{
+	v := &Vault{
 		crypto: crypto,
 		client: pb.NewVaultServiceClient(grpcConn),
 	}
+
+	if token, password, err := LoadSession(); err == nil {
+		v.token = token
+		v.password = password
+	}
+
+	return v
 }
 
-func (v *Vault) AddRecord(login string, password string, record VaultRecord) error {
+func (v *Vault) AddRecord(record VaultRecord) error {
 	salt := []byte("static-salt") // TODO: получать от сервера
-	key := v.crypto.DeriveKey([]byte(password), salt)
+	key := v.crypto.DeriveKey([]byte(v.password), salt)
 
 	nonce, encrypted, err := v.crypto.Encrypt(record.Data, key)
 	if err != nil {
@@ -51,8 +87,7 @@ func (v *Vault) AddRecord(login string, password string, record VaultRecord) err
 	defer cancel()
 
 	_, err = v.client.AddRecord(ctx, &pb.AddRecordRequest{
-		Login:    login,
-		Password: password,
+		Token: v.token,
 		Record: &pb.VaultRecord{
 			Type:  record.Type,
 			Meta:  record.Meta,
@@ -68,20 +103,17 @@ func (v *Vault) AddRecord(login string, password string, record VaultRecord) err
 	return nil
 }
 
-func (v *Vault) FetchRecords(login string, password string) ([]VaultRecord, error) {
+func (v *Vault) FetchRecords() ([]VaultRecord, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	res, err := v.client.GetRecords(ctx, &pb.GetRecordsRequest{
-		Login:    login,
-		Password: password,
-	})
+	res, err := v.client.GetRecords(ctx, &pb.GetRecordsRequest{Token: v.token})
 	if err != nil {
 		return nil, fmt.Errorf("gRPC GetRecords failed: %w", err)
 	}
 
 	salt := []byte("static-salt") // TODO: получать от сервера
-	key := v.crypto.DeriveKey([]byte(password), salt)
+	key := v.crypto.DeriveKey([]byte(v.password), salt)
 
 	var records []VaultRecord
 	for _, r := range res.Records {
@@ -98,3 +130,5 @@ func (v *Vault) FetchRecords(login string, password string) ([]VaultRecord, erro
 	}
 	return records, nil
 }
+
+/*</new funcs>*/
