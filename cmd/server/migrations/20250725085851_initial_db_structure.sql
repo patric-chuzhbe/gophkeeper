@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE metadata
 (
-    metadata_id UUID         NOT NULL,
+    metadata_id UUID         NOT NULL DEFAULT gen_random_uuid(),
     record_id   UUID NULL,
     name        VARCHAR(255) NOT NULL,
     value       TEXT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE metadata
 
 CREATE TABLE users
 (
-    user_id UUID         NOT NULL,
+    user_id UUID         NOT NULL DEFAULT gen_random_uuid(),
     login   VARCHAR(255) NOT NULL,
     pass    VARCHAR(255) NULL,
     CONSTRAINT PK_USERS PRIMARY KEY (user_id)
@@ -21,11 +21,12 @@ CREATE UNIQUE INDEX Index_1 ON users (login);
 
 CREATE TABLE vault_records
 (
-    record_id UUID         NOT NULL,
+    record_id UUID         NOT NULL DEFAULT gen_random_uuid(),
     user_id   UUID NULL,
     data      TEXT NULL,
     type      VARCHAR(255) NOT NULL DEFAULT 'LOG_PASS'
         CONSTRAINT CKC_TYPE_VAULT_RE CHECK (type IN ('LOG_PASS', 'TEXT', 'BINARY', 'BANK_CARD')),
+    nonce     TEXT         not null,
     CONSTRAINT PK_VAULT_RECORDS PRIMARY KEY (record_id)
 );
 

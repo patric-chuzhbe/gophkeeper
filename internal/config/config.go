@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"time"
 
 	"log"
 	"os"
@@ -16,15 +17,18 @@ import (
 // Config holds the application configuration loaded from environment variables
 // and optionally overridden by command-line flags.
 type Config struct {
-	ServerURL     string `env:"SERVER_URL" validate:"url" json:"server_url"`
-	GRPCAddress   string `env:"GRPC_ADDRESS" json:"grpc_address"`
-	MigrationsDir string `env:"MIGRATIONS_DIR" json:"migrations_dir"`
+	ServerURL       string        `env:"SERVER_URL" validate:"url" json:"server_url"`
+	GRPCAddress     string        `env:"GRPC_ADDRESS" json:"grpc_address"`
+	MigrationsDir   string        `env:"MIGRATIONS_DIR" json:"migrations_dir"`
+	DatabaseDSN     string        `env:"DATABASE_DSN" json:"database_dsn"`
+	GRPCDialTimeout time.Duration `env:"GRPC_DIAL_TIMEOUT" json:"grpc_dial_timeout"`
 }
 
 var defaultConfig = Config{
-	ServerURL:     "http://localhost:8080",
-	GRPCAddress:   ":50051",
-	MigrationsDir: "migrations",
+	ServerURL:       "http://localhost:8080",
+	GRPCAddress:     ":50051",
+	MigrationsDir:   "migrations",
+	GRPCDialTimeout: 5 * time.Second,
 }
 
 type initOptions struct {

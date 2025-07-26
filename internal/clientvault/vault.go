@@ -1,20 +1,21 @@
 package clientvault
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
+	"time"
 
 	"github.com/patric-chuzhbe/gophkeeper/internal/config"
 
-	"net/http"
+	"google.golang.org/grpc"
+
+	pb "github.com/patric-chuzhbe/gophkeeper/internal/servergrpc/proto"
 )
 
 type Vault struct {
-	config    *config.Config
-	serverURL string
-	crypto    cryptographer
+	config *config.Config
+	crypto cryptographer
+	client pb.VaultServiceClient
 }
 
 type VaultRecord struct {
@@ -30,61 +31,70 @@ type cryptographer interface {
 	Decrypt(ciphertext []byte, nonce []byte, key []byte) ([]byte, error)
 }
 
-func New(serverURL string, crypto cryptographer) *Vault {
-	return &Vault{serverURL: serverURL, crypto: crypto}
+func New(crypto cryptographer, grpcConn *grpc.ClientConn) *Vault {
+	return &Vault{
+		crypto: crypto,
+		client: pb.NewVaultServiceClient(grpcConn),
+	}
 }
 
-func (v *Vault) AddRecord(password string, record VaultRecord) error {
-	salt := []byte("static-salt") // TODO: Для демонстрации — заменить на динамический!
+func (v *Vault) AddRecord(login string, password string, record VaultRecord) error {
+	salt := []byte("static-salt") // TODO: получать от сервера
 	key := v.crypto.DeriveKey([]byte(password), salt)
 
 	nonce, encrypted, err := v.crypto.Encrypt(record.Data, key)
 	if err != nil {
 		return err
 	}
-	record.Data = encrypted
-	record.Nonce = nonce
 
-	body, _ := json.Marshal(record)
-	resp, err := http.Post(v.serverURL+"/vault", "application/json", bytes.NewReader(body))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = v.client.AddRecord(ctx, &pb.AddRecordRequest{
+		Login:    login,
+		Password: password,
+		Record: &pb.VaultRecord{
+			Type:  record.Type,
+			Meta:  record.Meta,
+			Data:  encrypted,
+			Nonce: nonce,
+		},
+	})
 	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 201 {
-		b, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("server error: %s", string(b))
+		return fmt.Errorf("gRPC AddRecord failed: %w", err)
 	}
 
 	fmt.Println("Record stored successfully.")
 	return nil
 }
 
-func (v *Vault) FetchRecords(password string) ([]VaultRecord, error) {
-	resp, err := http.Get(v.serverURL + "/vault")
+func (v *Vault) FetchRecords(login string, password string) ([]VaultRecord, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	res, err := v.client.GetRecords(ctx, &pb.GetRecordsRequest{
+		Login:    login,
+		Password: password,
+	})
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var encryptedRecords []VaultRecord
-	if err := json.NewDecoder(resp.Body).Decode(&encryptedRecords); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gRPC GetRecords failed: %w", err)
 	}
 
-	salt := []byte("static-salt") // В будущем — из БД
+	salt := []byte("static-salt") // TODO: получать от сервера
 	key := v.crypto.DeriveKey([]byte(password), salt)
 
-	var decrypted []VaultRecord
-	for _, rec := range encryptedRecords {
-		plaintext, err := v.crypto.Decrypt(rec.Data, rec.Nonce, key)
+	var records []VaultRecord
+	for _, r := range res.Records {
+		plain, err := v.crypto.Decrypt(r.Data, r.Nonce, key)
 		if err != nil {
-			continue // TODO: можно логировать
+			continue // TODO: логировать
 		}
-		rec.Data = plaintext
-		decrypted = append(decrypted, rec)
+		records = append(records, VaultRecord{
+			Type:  r.Type,
+			Meta:  r.Meta,
+			Data:  plain,
+			Nonce: r.Nonce,
+		})
 	}
-
-	return decrypted, nil
+	return records, nil
 }

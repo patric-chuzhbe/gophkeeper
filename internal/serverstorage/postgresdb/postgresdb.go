@@ -3,14 +3,94 @@ package postgresdb
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
+	"errors"
 	"fmt"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+
+	"github.com/patric-chuzhbe/gophkeeper/internal/models"
 )
 
 type PostgresDB struct {
 	database *sql.DB
+}
+
+/*< new funcs>*/
+func (db *PostgresDB) GetUserRecords(ctx context.Context, userID string) ([]models.UserRecord, error) {
+	rows, err := db.database.QueryContext(
+		ctx,
+		`SELECT data, type, nonce FROM vault_records WHERE user_id = $1`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := []models.UserRecord{}
+	for rows.Next() {
+		var typ string
+		var encodedData string
+		var nonce string
+		if err := rows.Scan(&encodedData, &typ, &nonce); err != nil {
+			return nil, err
+		}
+		decodedData, err := base64.StdEncoding.DecodeString(encodedData)
+		if err != nil {
+			return nil, err
+		}
+		decodedNonce, err := base64.StdEncoding.DecodeString(nonce)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, models.UserRecord{
+			Type:  typ,
+			Data:  decodedData,
+			Nonce: decodedNonce,
+		})
+	}
+	return result, nil
+}
+
+func (db *PostgresDB) InsertRecord(
+	ctx context.Context,
+	userID string,
+	data []byte,
+	nonce []byte,
+	recType string,
+	tx *sql.Tx,
+) error {
+	_, err := tx.ExecContext(ctx,
+		`
+			INSERT INTO vault_records (record_id, user_id, data, nonce, type)
+				VALUES (gen_random_uuid(), $1, $2, $3, $4)
+		`,
+		userID,
+		base64.StdEncoding.EncodeToString(data),
+		base64.StdEncoding.EncodeToString(nonce),
+		recType,
+	)
+	if err != nil {
+		return fmt.Errorf("insert failed: %w", err)
+	}
+
+	return nil
+}
+
+func (db *PostgresDB) Authenticate(ctx context.Context, login string, password string) (string, error) {
+	row := db.database.QueryRowContext(ctx,
+		`SELECT user_id FROM users WHERE login = $1 AND pass = $2`,
+		login,
+		password,
+	)
+	var userID string
+	err := row.Scan(&userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", fmt.Errorf("invalid login or password")
+	}
+	return userID, err
 }
 
 func (db *PostgresDB) resetDB(ctx context.Context) error {
@@ -105,3 +185,5 @@ func (db *PostgresDB) Close() error {
 
 	return nil
 }
+
+/*</new funcs>*/
