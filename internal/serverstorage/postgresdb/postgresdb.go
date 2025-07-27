@@ -39,10 +39,22 @@ func (db *PostgresDB) RegisterUser(ctx context.Context, login string, password s
 	return nil
 }
 
-func (db *PostgresDB) GetUserRecords(ctx context.Context, userID string) ([]models.UserRecord, error) {
+func (db *PostgresDB) GetUserRecords(ctx context.Context, userID string) (map[string]models.UserRecord, error) {
 	rows, err := db.database.QueryContext(
 		ctx,
-		`SELECT data, type, nonce FROM vault_records WHERE user_id = $1`,
+		`
+			SELECT 
+				vault_records.record_id,
+				vault_records.data, 
+				vault_records.type, 
+				vault_records.nonce,
+				metadata.name,
+				metadata.value
+				FROM vault_records
+					LEFT JOIN metadata ON 
+						metadata.record_id = vault_records.record_id
+				WHERE vault_records.user_id = $1
+		`,
 		userID,
 	)
 	if err != nil {
@@ -50,27 +62,46 @@ func (db *PostgresDB) GetUserRecords(ctx context.Context, userID string) ([]mode
 	}
 	defer rows.Close()
 
-	result := []models.UserRecord{}
+	result := map[string]models.UserRecord{}
 	for rows.Next() {
+		var recordID string
 		var typ string
 		var encodedData string
 		var nonce string
-		if err := rows.Scan(&encodedData, &typ, &nonce); err != nil {
-			return nil, err
-		}
-		decodedData, err := base64.StdEncoding.DecodeString(encodedData)
+		var metadataName sql.NullString
+		var metadataValue sql.NullString
+		err := rows.Scan(
+			&recordID,
+			&encodedData,
+			&typ,
+			&nonce,
+			&metadataName,
+			&metadataValue,
+		)
 		if err != nil {
 			return nil, err
 		}
-		decodedNonce, err := base64.StdEncoding.DecodeString(nonce)
-		if err != nil {
-			return nil, err
+		record, ok := result[recordID]
+		if !ok {
+			decodedData, err := base64.StdEncoding.DecodeString(encodedData)
+			if err != nil {
+				return nil, err
+			}
+			decodedNonce, err := base64.StdEncoding.DecodeString(nonce)
+			if err != nil {
+				return nil, err
+			}
+			record = models.UserRecord{
+				Type:  typ,
+				Data:  decodedData,
+				Nonce: decodedNonce,
+				Meta:  map[string]string{},
+			}
 		}
-		result = append(result, models.UserRecord{
-			Type:  typ,
-			Data:  decodedData,
-			Nonce: decodedNonce,
-		})
+		if metadataName.Valid {
+			record.Meta[metadataName.String] = metadataValue.String
+		}
+		result[recordID] = record
 	}
 	return result, nil
 }
@@ -81,20 +112,39 @@ func (db *PostgresDB) InsertRecord(
 	data []byte,
 	nonce []byte,
 	recType string,
+	meta map[string]string,
 	tx *sql.Tx,
 ) error {
-	_, err := tx.ExecContext(ctx,
+	var recordID string
+	err := tx.QueryRowContext(ctx,
 		`
 			INSERT INTO vault_records (record_id, user_id, data, nonce, type)
 				VALUES (gen_random_uuid(), $1, $2, $3, $4)
+				RETURNING record_id
 		`,
 		userID,
 		base64.StdEncoding.EncodeToString(data),
 		base64.StdEncoding.EncodeToString(nonce),
 		recType,
-	)
+	).Scan(&recordID)
 	if err != nil {
-		return fmt.Errorf("insert failed: %w", err)
+		return fmt.Errorf("insert value failed: %w", err)
+	}
+
+	for key, val := range meta {
+		_, err := tx.ExecContext(
+			ctx,
+			`
+				INSERT INTO metadata (metadata_id, record_id, name, value)
+			 		VALUES (gen_random_uuid(), $1, $2, $3)
+			 `,
+			recordID,
+			key,
+			val,
+		)
+		if err != nil {
+			return fmt.Errorf("insert metadata failed: %w", err)
+		}
 	}
 
 	return nil

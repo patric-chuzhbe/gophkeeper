@@ -4,4 +4,5 @@ type UserRecord struct {
 	Type  string
 	Data  []byte
 	Nonce []byte
+	Meta  map[string]string
 }

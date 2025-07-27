@@ -72,7 +72,15 @@ func (s *VaultServer) AddRecord(ctx context.Context, req *pb.AddRecordRequest) (
 	}
 	defer s.db.RollbackTransaction(tx)
 
-	err = s.db.InsertRecord(ctx, userID, req.Record.Data, req.Record.Nonce, req.Record.Type, tx)
+	err = s.db.InsertRecord(
+		ctx,
+		userID,
+		req.Record.Data,
+		req.Record.Nonce,
+		req.Record.Type,
+		req.Record.Meta,
+		tx,
+	)
 	if err != nil {
 		log.Printf("error inserting record: %v", err)
 		return nil, status.Error(codes.Internal, "failed to add record")
@@ -94,6 +102,7 @@ func (s *VaultServer) GetRecords(ctx context.Context, req *pb.GetRecordsRequest)
 
 	records, err := s.db.GetUserRecords(ctx, userID)
 	if err != nil {
+		log.Printf("error getting records: %v", err)
 		return nil, status.Error(codes.Internal, "failed to retrieve records")
 	}
 
@@ -103,6 +112,7 @@ func (s *VaultServer) GetRecords(ctx context.Context, req *pb.GetRecordsRequest)
 			Type:  record.Type,
 			Data:  record.Data,
 			Nonce: record.Nonce,
+			Meta:  record.Meta,
 		})
 	}
 

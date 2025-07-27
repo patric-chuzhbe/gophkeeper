@@ -102,12 +102,15 @@ func (c *CLI) Add(cmd *cobra.Command, args []string) {
 	reader := bufio.NewReader(os.Stdin)
 
 	typ := readLine(reader, "Type (e.g. login_password): ")
-	metaStr := readLine(reader, "Meta (e.g. website=example.com): ")
+	metaStr := readLine(reader, "Meta (e.g. website=example.com; person = John Smith): ")
 	data := readLine(reader, "Data to encrypt: ")
 
 	meta := map[string]string{}
-	if kv := strings.SplitN(metaStr, "=", 2); len(kv) == 2 {
-		meta[kv[0]] = kv[1]
+	pairs := strings.Split(metaStr, ";")
+	for _, pair := range pairs {
+		if kv := strings.SplitN(pair, "=", 2); len(kv) == 2 {
+			meta[strings.TrimSpace(kv[0])] = strings.TrimSpace(kv[1])
+		}
 	}
 
 	rec := clientvault.VaultRecord{
