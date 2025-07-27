@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
@@ -17,7 +18,27 @@ type PostgresDB struct {
 	database *sql.DB
 }
 
+var ErrUserExists = errors.New("user already exists")
+
 /*< new funcs>*/
+func (db *PostgresDB) RegisterUser(ctx context.Context, login string, password string) error {
+	_, err := db.database.ExecContext(ctx,
+		`
+			INSERT INTO users (user_id, login, pass)
+				VALUES (gen_random_uuid(), $1, $2)
+		`,
+		login,
+		password,
+	)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return ErrUserExists
+		}
+		return err
+	}
+	return nil
+}
+
 func (db *PostgresDB) GetUserRecords(ctx context.Context, userID string) ([]models.UserRecord, error) {
 	rows, err := db.database.QueryContext(
 		ctx,

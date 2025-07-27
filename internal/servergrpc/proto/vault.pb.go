@@ -7,12 +7,11 @@
 package proto
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -21,6 +20,110 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+type RegisterRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Login         string                 `protobuf:"bytes,1,opt,name=login,proto3" json:"login,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterRequest) Reset() {
+	*x = RegisterRequest{}
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterRequest) ProtoMessage() {}
+
+func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
+func (*RegisterRequest) Descriptor() ([]byte, []int) {
+	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *RegisterRequest) GetLogin() string {
+	if x != nil {
+		return x.Login
+	}
+	return ""
+}
+
+func (x *RegisterRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+type RegisterResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterResponse) Reset() {
+	*x = RegisterResponse{}
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterResponse) ProtoMessage() {}
+
+func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterResponse.ProtoReflect.Descriptor instead.
+func (*RegisterResponse) Descriptor() ([]byte, []int) {
+	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *RegisterResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *RegisterResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
 
 type LoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -32,7 +135,7 @@ type LoginRequest struct {
 
 func (x *LoginRequest) Reset() {
 	*x = LoginRequest{}
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[0]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +147,7 @@ func (x *LoginRequest) String() string {
 func (*LoginRequest) ProtoMessage() {}
 
 func (x *LoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[0]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +160,7 @@ func (x *LoginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
 func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{0}
+	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *LoginRequest) GetLogin() string {
@@ -83,7 +186,7 @@ type LoginResponse struct {
 
 func (x *LoginResponse) Reset() {
 	*x = LoginResponse{}
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[1]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -95,7 +198,7 @@ func (x *LoginResponse) String() string {
 func (*LoginResponse) ProtoMessage() {}
 
 func (x *LoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[1]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -108,7 +211,7 @@ func (x *LoginResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginResponse.ProtoReflect.Descriptor instead.
 func (*LoginResponse) Descriptor() ([]byte, []int) {
-	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{1}
+	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *LoginResponse) GetToken() string {
@@ -129,7 +232,7 @@ type AddRecordRequest struct {
 
 func (x *AddRecordRequest) Reset() {
 	*x = AddRecordRequest{}
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[2]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -141,7 +244,7 @@ func (x *AddRecordRequest) String() string {
 func (*AddRecordRequest) ProtoMessage() {}
 
 func (x *AddRecordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[2]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -154,7 +257,7 @@ func (x *AddRecordRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddRecordRequest.ProtoReflect.Descriptor instead.
 func (*AddRecordRequest) Descriptor() ([]byte, []int) {
-	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{2}
+	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AddRecordRequest) GetToken() string {
@@ -188,7 +291,7 @@ type AddRecordResponse struct {
 
 func (x *AddRecordResponse) Reset() {
 	*x = AddRecordResponse{}
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[3]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -200,7 +303,7 @@ func (x *AddRecordResponse) String() string {
 func (*AddRecordResponse) ProtoMessage() {}
 
 func (x *AddRecordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[3]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -213,7 +316,7 @@ func (x *AddRecordResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddRecordResponse.ProtoReflect.Descriptor instead.
 func (*AddRecordResponse) Descriptor() ([]byte, []int) {
-	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{3}
+	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *AddRecordResponse) GetSuccess() bool {
@@ -239,7 +342,7 @@ type GetRecordsRequest struct {
 
 func (x *GetRecordsRequest) Reset() {
 	*x = GetRecordsRequest{}
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[4]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -251,7 +354,7 @@ func (x *GetRecordsRequest) String() string {
 func (*GetRecordsRequest) ProtoMessage() {}
 
 func (x *GetRecordsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[4]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -264,7 +367,7 @@ func (x *GetRecordsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRecordsRequest.ProtoReflect.Descriptor instead.
 func (*GetRecordsRequest) Descriptor() ([]byte, []int) {
-	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{4}
+	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetRecordsRequest) GetToken() string {
@@ -283,7 +386,7 @@ type GetRecordsResponse struct {
 
 func (x *GetRecordsResponse) Reset() {
 	*x = GetRecordsResponse{}
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[5]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -295,7 +398,7 @@ func (x *GetRecordsResponse) String() string {
 func (*GetRecordsResponse) ProtoMessage() {}
 
 func (x *GetRecordsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[5]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -308,7 +411,7 @@ func (x *GetRecordsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRecordsResponse.ProtoReflect.Descriptor instead.
 func (*GetRecordsResponse) Descriptor() ([]byte, []int) {
-	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{5}
+	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetRecordsResponse) GetRecords() []*VaultRecord {
@@ -330,7 +433,7 @@ type VaultRecord struct {
 
 func (x *VaultRecord) Reset() {
 	*x = VaultRecord{}
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[6]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -342,7 +445,7 @@ func (x *VaultRecord) String() string {
 func (*VaultRecord) ProtoMessage() {}
 
 func (x *VaultRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[6]
+	mi := &file_internal_servergrpc_proto_vault_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -355,7 +458,7 @@ func (x *VaultRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VaultRecord.ProtoReflect.Descriptor instead.
 func (*VaultRecord) Descriptor() ([]byte, []int) {
-	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{6}
+	return file_internal_servergrpc_proto_vault_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *VaultRecord) GetType() string {
@@ -390,7 +493,13 @@ var File_internal_servergrpc_proto_vault_proto protoreflect.FileDescriptor
 
 const file_internal_servergrpc_proto_vault_proto_rawDesc = "" +
 	"\n" +
-	"%internal/servergrpc/proto/vault.proto\x12\x05vault\"@\n" +
+	"%internal/servergrpc/proto/vault.proto\x12\x05vault\"C\n" +
+	"\x0fRegisterRequest\x12\x14\n" +
+	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"F\n" +
+	"\x10RegisterResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"@\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"%\n" +
@@ -414,12 +523,13 @@ const file_internal_servergrpc_proto_vault_proto_rawDesc = "" +
 	"\x05nonce\x18\x04 \x01(\fR\x05nonce\x1a7\n" +
 	"\tMetaEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xc5\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\x82\x02\n" +
 	"\fVaultService\x122\n" +
 	"\x05Login\x12\x13.vault.LoginRequest\x1a\x14.vault.LoginResponse\x12>\n" +
 	"\tAddRecord\x12\x17.vault.AddRecordRequest\x1a\x18.vault.AddRecordResponse\x12A\n" +
 	"\n" +
-	"GetRecords\x12\x18.vault.GetRecordsRequest\x1a\x19.vault.GetRecordsResponseB@Z>github.com/patric-chuzhbe/gophkeeper/internal/servergrpc/protob\x06proto3"
+	"GetRecords\x12\x18.vault.GetRecordsRequest\x1a\x19.vault.GetRecordsResponse\x12;\n" +
+	"\bRegister\x12\x16.vault.RegisterRequest\x1a\x17.vault.RegisterResponseB@Z>github.com/patric-chuzhbe/gophkeeper/internal/servergrpc/protob\x06proto3"
 
 var (
 	file_internal_servergrpc_proto_vault_proto_rawDescOnce sync.Once
@@ -433,29 +543,33 @@ func file_internal_servergrpc_proto_vault_proto_rawDescGZIP() []byte {
 	return file_internal_servergrpc_proto_vault_proto_rawDescData
 }
 
-var file_internal_servergrpc_proto_vault_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_internal_servergrpc_proto_vault_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_internal_servergrpc_proto_vault_proto_goTypes = []any{
-	(*LoginRequest)(nil),       // 0: vault.LoginRequest
-	(*LoginResponse)(nil),      // 1: vault.LoginResponse
-	(*AddRecordRequest)(nil),   // 2: vault.AddRecordRequest
-	(*AddRecordResponse)(nil),  // 3: vault.AddRecordResponse
-	(*GetRecordsRequest)(nil),  // 4: vault.GetRecordsRequest
-	(*GetRecordsResponse)(nil), // 5: vault.GetRecordsResponse
-	(*VaultRecord)(nil),        // 6: vault.VaultRecord
-	nil,                        // 7: vault.VaultRecord.MetaEntry
+	(*RegisterRequest)(nil),    // 0: vault.RegisterRequest
+	(*RegisterResponse)(nil),   // 1: vault.RegisterResponse
+	(*LoginRequest)(nil),       // 2: vault.LoginRequest
+	(*LoginResponse)(nil),      // 3: vault.LoginResponse
+	(*AddRecordRequest)(nil),   // 4: vault.AddRecordRequest
+	(*AddRecordResponse)(nil),  // 5: vault.AddRecordResponse
+	(*GetRecordsRequest)(nil),  // 6: vault.GetRecordsRequest
+	(*GetRecordsResponse)(nil), // 7: vault.GetRecordsResponse
+	(*VaultRecord)(nil),        // 8: vault.VaultRecord
+	nil,                        // 9: vault.VaultRecord.MetaEntry
 }
 var file_internal_servergrpc_proto_vault_proto_depIdxs = []int32{
-	6, // 0: vault.AddRecordRequest.record:type_name -> vault.VaultRecord
-	6, // 1: vault.GetRecordsResponse.records:type_name -> vault.VaultRecord
-	7, // 2: vault.VaultRecord.meta:type_name -> vault.VaultRecord.MetaEntry
-	0, // 3: vault.VaultService.Login:input_type -> vault.LoginRequest
-	2, // 4: vault.VaultService.AddRecord:input_type -> vault.AddRecordRequest
-	4, // 5: vault.VaultService.GetRecords:input_type -> vault.GetRecordsRequest
-	1, // 6: vault.VaultService.Login:output_type -> vault.LoginResponse
-	3, // 7: vault.VaultService.AddRecord:output_type -> vault.AddRecordResponse
-	5, // 8: vault.VaultService.GetRecords:output_type -> vault.GetRecordsResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
+	8, // 0: vault.AddRecordRequest.record:type_name -> vault.VaultRecord
+	8, // 1: vault.GetRecordsResponse.records:type_name -> vault.VaultRecord
+	9, // 2: vault.VaultRecord.meta:type_name -> vault.VaultRecord.MetaEntry
+	2, // 3: vault.VaultService.Login:input_type -> vault.LoginRequest
+	4, // 4: vault.VaultService.AddRecord:input_type -> vault.AddRecordRequest
+	6, // 5: vault.VaultService.GetRecords:input_type -> vault.GetRecordsRequest
+	0, // 6: vault.VaultService.Register:input_type -> vault.RegisterRequest
+	3, // 7: vault.VaultService.Login:output_type -> vault.LoginResponse
+	5, // 8: vault.VaultService.AddRecord:output_type -> vault.AddRecordResponse
+	7, // 9: vault.VaultService.GetRecords:output_type -> vault.GetRecordsResponse
+	1, // 10: vault.VaultService.Register:output_type -> vault.RegisterResponse
+	7, // [7:11] is the sub-list for method output_type
+	3, // [3:7] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
 	3, // [3:3] is the sub-list for extension extendee
 	0, // [0:3] is the sub-list for field type_name
@@ -472,7 +586,7 @@ func file_internal_servergrpc_proto_vault_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_servergrpc_proto_vault_proto_rawDesc), len(file_internal_servergrpc_proto_vault_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

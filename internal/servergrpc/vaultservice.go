@@ -2,6 +2,7 @@ package servergrpc
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"google.golang.org/grpc/codes"
@@ -18,6 +19,29 @@ type VaultServer struct {
 }
 
 /*< new funcs>*/
+
+func (s *VaultServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+	if req.Login == "" || req.Password == "" {
+		return &pb.RegisterResponse{
+			Success: false,
+			Message: "login and password required",
+		}, nil
+	}
+
+	err := s.db.RegisterUser(ctx, req.Login, req.Password)
+	if errors.Is(err, postgresdb.ErrUserExists) {
+		return nil, status.Error(codes.AlreadyExists, "user already exists")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "registration failed")
+	}
+
+	return &pb.RegisterResponse{
+		Success: true,
+		Message: "user registered",
+	}, nil
+}
+
 func (s *VaultServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	userID, err := s.db.Authenticate(ctx, req.Login, req.Password)
 	if err != nil {

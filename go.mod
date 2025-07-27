@@ -7,7 +7,6 @@ toolchain go1.23.11
 require (
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/go-playground/validator/v10 v10.27.0
-	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1

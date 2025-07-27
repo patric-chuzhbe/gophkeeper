@@ -22,9 +22,25 @@ type vault interface {
 	AddRecord(record clientvault.VaultRecord) error
 	FetchRecords() ([]clientvault.VaultRecord, error)
 	Login(login string, password string) error
+	Register(login, password string) error
 }
 
 /*< new funcs>*/
+
+func (c *CLI) Register(cmd *cobra.Command, args []string) {
+	reader := bufio.NewReader(os.Stdin)
+
+	login := readLine(reader, "Login: ")
+	password := readLine(reader, "Password: ")
+
+	if err := c.vault.Register(login, password); err != nil {
+		fmt.Println("Error:", err)
+	}
+
+	if err := c.vault.Login(login, password); err != nil {
+		fmt.Println("Login failed:", err)
+	}
+}
 
 func (c *CLI) Login(cmd *cobra.Command, args []string) {
 	reader := bufio.NewReader(os.Stdin)
@@ -67,6 +83,12 @@ func New(vault vault) *CLI {
 		Use:   "login",
 		Short: "Authenticate and get token",
 		Run:   cli.Login,
+	})
+
+	cli.rootCmd.AddCommand(&cobra.Command{
+		Use:   "register",
+		Short: "Register a new user",
+		Run:   cli.Register,
 	})
 
 	return cli

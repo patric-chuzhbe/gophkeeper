@@ -8,6 +8,17 @@ service VaultService {
   rpc Login (LoginRequest) returns (LoginResponse);
   rpc AddRecord (AddRecordRequest) returns (AddRecordResponse);
   rpc GetRecords (GetRecordsRequest) returns (GetRecordsResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+}
+
+message RegisterRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message RegisterResponse {
+  bool success = 1;
+  string message = 2;
 }
 
 message LoginRequest {
