@@ -113,10 +113,19 @@ func (db *PostgresDB) InsertRecord(
 	nonce []byte,
 	recType string,
 	meta map[string]string,
-	tx *sql.Tx,
 ) error {
+	tx, err := db.BeginTransaction()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = db.RollbackTransaction(tx)
+		}
+	}()
+
 	var recordID string
-	err := tx.QueryRowContext(ctx,
+	err = tx.QueryRowContext(ctx,
 		`
 			INSERT INTO vault_records (record_id, user_id, data, nonce, type)
 				VALUES (gen_random_uuid(), $1, $2, $3, $4)
@@ -147,21 +156,25 @@ func (db *PostgresDB) InsertRecord(
 		}
 	}
 
+	if err = db.CommitTransaction(tx); err != nil {
+		return fmt.Errorf("commit failed: %w", err)
+	}
+
 	return nil
 }
 
-func (db *PostgresDB) Authenticate(ctx context.Context, login string, password string) (string, error) {
+func (db *PostgresDB) GetUserByLogin(ctx context.Context, login string) (string, string, error) {
 	row := db.database.QueryRowContext(ctx,
-		`SELECT user_id FROM users WHERE login = $1 AND pass = $2`,
+		`SELECT user_id, pass FROM users WHERE login = $1`,
 		login,
-		password,
 	)
 	var userID string
-	err := row.Scan(&userID)
+	var pass string
+	err := row.Scan(&userID, &pass)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", fmt.Errorf("invalid login or password")
+		return "", "", fmt.Errorf("invalid login or password")
 	}
-	return userID, err
+	return userID, pass, err
 }
 
 func (db *PostgresDB) resetDB(ctx context.Context) error {

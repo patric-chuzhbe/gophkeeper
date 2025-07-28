@@ -32,21 +32,21 @@ type vault interface {
 
 type dataTypeHandler interface {
 	Input(reader *bufio.Reader) ([]byte, error)
-	Display(data []byte /*, meta map[string]string*/)
+	Display(data []byte)
 }
 
 func getHandler(typ string) dataTypeHandler {
 	switch typ {
-	case models.DataTypeLogPass /*"LOG_PASS"*/ :
+	case models.DataTypeLogPass:
 		return &datatypehandler.LoginPassHandler{}
-	case models.DataTypeText /*"TEXT"*/ :
+	case models.DataTypeText:
 		return &datatypehandler.TextHandler{}
-	case models.DataTypeBinary /*"BINARY"*/ :
+	case models.DataTypeBinary:
 		return &datatypehandler.BinaryHandler{}
-	case models.DataTypeBankCard /*"BANK_CARD"*/ :
+	case models.DataTypeBankCard:
 		return &datatypehandler.BankCardHandler{}
 	default:
-		return &datatypehandler.TextHandler{} // fallback
+		return &datatypehandler.TextHandler{}
 	}
 }
 
@@ -126,7 +126,6 @@ func (c *CLI) Add(cmd *cobra.Command, args []string) {
 
 	typ := readLine(reader, "Type (e.g. login_password): ")
 	metaStr := readLine(reader, "Meta (e.g. website=example.com; person = John Smith): ")
-	//data := readLine(reader, "Data to encrypt: ")
 
 	meta := map[string]string{}
 	pairs := strings.Split(metaStr, ";")
@@ -144,9 +143,9 @@ func (c *CLI) Add(cmd *cobra.Command, args []string) {
 	}
 
 	rec := clientvault.VaultRecord{
-		Type:                  typ,
-		Meta:                  meta,
-		Data:/*[]byte(*/ data, /*)*/
+		Type: typ,
+		Meta: meta,
+		Data: data,
 	}
 
 	if err := c.vault.AddRecord(rec); err != nil {
@@ -171,10 +170,9 @@ func (c *CLI) Get(cmd *cobra.Command, args []string) {
 		for k, v := range r.Meta {
 			fmt.Printf("  %s: %s\n", k, v)
 		}
-		//fmt.Printf("  Decrypted Data: %s\n", string(r.Data))
 		fmt.Println("  Decrypted Data:")
 		handler := getHandler(r.Type)
-		handler.Display(r.Data /*, r.Meta*/)
+		handler.Display(r.Data)
 	}
 }
 

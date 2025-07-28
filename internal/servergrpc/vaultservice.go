@@ -28,7 +28,12 @@ func (s *VaultServer) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 		}, nil
 	}
 
-	err := s.db.RegisterUser(ctx, req.Login, req.Password)
+	hashed, err := auth.HashPassword(req.Password)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "hash error")
+	}
+
+	err = s.db.RegisterUser(ctx, req.Login, hashed)
 	if errors.Is(err, postgresdb.ErrUserExists) {
 		return nil, status.Error(codes.AlreadyExists, "user already exists")
 	}
@@ -43,13 +48,20 @@ func (s *VaultServer) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 }
 
 func (s *VaultServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	userID, err := s.db.Authenticate(ctx, req.Login, req.Password)
+	userID, passwordHash, err := s.db.GetUserByLogin(ctx, req.Login)
 	if err != nil {
+		log.Println(err)
 		return nil, status.Error(codes.Unauthenticated, "auth fault")
+	}
+
+	if err := auth.VerifyPassword(req.Password, passwordHash); err != nil {
+		log.Println(err)
+		return nil, status.Errorf(codes.Unauthenticated, "invalid password")
 	}
 
 	token, err := auth.GenerateToken(userID)
 	if err != nil {
+		log.Println(err)
 		return nil, status.Errorf(codes.Internal, "failed to generate token")
 	}
 
@@ -66,12 +78,6 @@ func (s *VaultServer) AddRecord(ctx context.Context, req *pb.AddRecordRequest) (
 		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 	}
 
-	tx, err := s.db.BeginTransaction()
-	if err != nil {
-		return nil, err
-	}
-	defer s.db.RollbackTransaction(tx)
-
 	err = s.db.InsertRecord(
 		ctx,
 		userID,
@@ -79,16 +85,10 @@ func (s *VaultServer) AddRecord(ctx context.Context, req *pb.AddRecordRequest) (
 		req.Record.Nonce,
 		req.Record.Type,
 		req.Record.Meta,
-		tx,
 	)
 	if err != nil {
 		log.Printf("error inserting record: %v", err)
 		return nil, status.Error(codes.Internal, "failed to add record")
-	}
-
-	err = s.db.CommitTransaction(tx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "DB fault")
 	}
 
 	return &pb.AddRecordResponse{Success: true, Message: "Record added"}, nil
