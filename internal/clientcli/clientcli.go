@@ -6,6 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/patric-chuzhbe/gophkeeper/internal/datatypehandler"
+	"github.com/patric-chuzhbe/gophkeeper/internal/models"
+
 	"github.com/spf13/cobra"
 
 	"github.com/patric-chuzhbe/gophkeeper/internal/version"
@@ -26,6 +29,26 @@ type vault interface {
 }
 
 /*< new funcs>*/
+
+type dataTypeHandler interface {
+	Input(reader *bufio.Reader) ([]byte, error)
+	Display(data []byte /*, meta map[string]string*/)
+}
+
+func getHandler(typ string) dataTypeHandler {
+	switch typ {
+	case models.DataTypeLogPass /*"LOG_PASS"*/ :
+		return &datatypehandler.LoginPassHandler{}
+	case models.DataTypeText /*"TEXT"*/ :
+		return &datatypehandler.TextHandler{}
+	case models.DataTypeBinary /*"BINARY"*/ :
+		return &datatypehandler.BinaryHandler{}
+	case models.DataTypeBankCard /*"BANK_CARD"*/ :
+		return &datatypehandler.BankCardHandler{}
+	default:
+		return &datatypehandler.TextHandler{} // fallback
+	}
+}
 
 func (c *CLI) Register(cmd *cobra.Command, args []string) {
 	reader := bufio.NewReader(os.Stdin)
@@ -103,7 +126,7 @@ func (c *CLI) Add(cmd *cobra.Command, args []string) {
 
 	typ := readLine(reader, "Type (e.g. login_password): ")
 	metaStr := readLine(reader, "Meta (e.g. website=example.com; person = John Smith): ")
-	data := readLine(reader, "Data to encrypt: ")
+	//data := readLine(reader, "Data to encrypt: ")
 
 	meta := map[string]string{}
 	pairs := strings.Split(metaStr, ";")
@@ -113,10 +136,17 @@ func (c *CLI) Add(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	handler := getHandler(typ)
+	data, err := handler.Input(reader)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
 	rec := clientvault.VaultRecord{
-		Type: typ,
-		Meta: meta,
-		Data: []byte(data),
+		Type:                  typ,
+		Meta:                  meta,
+		Data:/*[]byte(*/ data, /*)*/
 	}
 
 	if err := c.vault.AddRecord(rec); err != nil {
@@ -141,7 +171,10 @@ func (c *CLI) Get(cmd *cobra.Command, args []string) {
 		for k, v := range r.Meta {
 			fmt.Printf("  %s: %s\n", k, v)
 		}
-		fmt.Printf("  Decrypted Data: %s\n", string(r.Data))
+		//fmt.Printf("  Decrypted Data: %s\n", string(r.Data))
+		fmt.Println("  Decrypted Data:")
+		handler := getHandler(r.Type)
+		handler.Display(r.Data /*, r.Meta*/)
 	}
 }
 
