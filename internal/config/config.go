@@ -22,6 +22,7 @@ type Config struct {
 	MigrationsDir   string        `env:"MIGRATIONS_DIR" json:"migrations_dir"`
 	DatabaseDSN     string        `env:"DATABASE_DSN" json:"database_dsn"`
 	GRPCDialTimeout time.Duration `env:"GRPC_DIAL_TIMEOUT" json:"grpc_dial_timeout"`
+	JWTSecret       string        `env:"JWT_SECRET" json:"jwt_secret"`
 }
 
 var defaultConfig = Config{
@@ -31,20 +32,9 @@ var defaultConfig = Config{
 	GRPCDialTimeout: 5 * time.Second,
 }
 
-type initOptions struct {
-	disableFlagsParsing bool
-}
-
-// New loads the application configuration from the environment and command-line flags,
-// applying optional InitOptions. Returns a validated Config instance.
-func New(optionsProto ...InitOption) (*Config, error) {
-	options := &initOptions{
-		disableFlagsParsing: false,
-	}
-	for _, protoOption := range optionsProto {
-		protoOption(options)
-	}
-
+// New loads the application configuration from the environment,
+// Returns a validated Config instance.
+func New() (*Config, error) {
 	config := &Config{}
 
 	parseJSON(config)
@@ -52,10 +42,6 @@ func New(optionsProto ...InitOption) (*Config, error) {
 	err := parseENV(config)
 	if err != nil {
 		return nil, err
-	}
-
-	if !options.disableFlagsParsing {
-		parseFlags(config)
 	}
 
 	applyDefaults(config, defaultConfig)
@@ -78,16 +64,6 @@ func (conf *Config) Validate() error {
 	}
 
 	return validate.Struct(conf)
-}
-
-// InitOption is a functional option type for configuring New().
-type InitOption func(*initOptions)
-
-// WithDisableFlagsParsing disables parsing of command-line flags when creating a Config.
-func WithDisableFlagsParsing(disableFlagsParsing bool) InitOption {
-	return func(options *initOptions) {
-		options.disableFlagsParsing = disableFlagsParsing
-	}
 }
 
 func validateFilePath(fieldLevel validator.FieldLevel) bool {
@@ -123,23 +99,6 @@ func applyDefaults(config *Config, defaultConfig Config) {
 			field.Set(defVal)
 		}
 	}
-}
-
-func parseFlags(config *Config) {
-	//flag.StringVar(&config.RunAddr, "a", config.RunAddr, "address and port to run server")
-	//flag.StringVar(&config.ShortURLBase, "b", config.ShortURLBase, "base address of the resulting shortened URL")
-	//flag.StringVar(&config.LogLevel, "l", config.LogLevel, "logger level")
-	//flag.StringVar(&config.DBFileName, "f", config.DBFileName, "JSON file name with database")
-	//flag.StringVar(&config.DatabaseDSN, "d", config.DatabaseDSN, "A string with the database connection details")
-	//flag.BoolVar(&config.EnableHTTPS, "s", config.EnableHTTPS, "HTTPS enabling flag")
-	//
-	//JSONConfigFilePathDesc := "JSON configuration file path"
-	//flag.StringVar(&config.JSONConfigFilePath, "c", config.JSONConfigFilePath, JSONConfigFilePathDesc)
-	//flag.StringVar(&config.JSONConfigFilePath, "config", config.JSONConfigFilePath, JSONConfigFilePathDesc)
-	//
-	//flag.StringVar(&config.TrustedSubnet, "t", config.TrustedSubnet, "CIDR for the trusted subnet")
-	//
-	//flag.Parse()
 }
 
 func parseENV(config *Config) error {

@@ -20,7 +20,6 @@ type PostgresDB struct {
 
 var ErrUserExists = errors.New("user already exists")
 
-/*< new funcs>*/
 func (db *PostgresDB) RegisterUser(ctx context.Context, login string, password string) error {
 	_, err := db.database.ExecContext(ctx,
 		`
@@ -269,5 +268,3 @@ func (db *PostgresDB) Close() error {
 
 	return nil
 }
-
-/*</new funcs>*/

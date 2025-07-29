@@ -7,20 +7,28 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("super-secret-key") // TODO: Вынести в ENV
+type JWTService struct {
+	secret []byte
+}
 
-func GenerateToken(userID string) (string, error) {
+func NewJWTService(secret string) *JWTService {
+	return &JWTService{
+		secret: []byte(secret),
+	}
+}
+
+func (j *JWTService) GenerateToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"exp":     time.Now().Add(time.Hour * 1).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+	return token.SignedString(j.secret)
 }
 
-func ParseToken(tokenStr string) (string, error) {
+func (j *JWTService) ParseToken(tokenStr string) (string, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
+		return j.secret, nil
 	})
 
 	if err != nil || !token.Valid {

@@ -28,8 +28,6 @@ type vault interface {
 	Register(login, password string) error
 }
 
-/*< new funcs>*/
-
 type dataTypeHandler interface {
 	Input(reader *bufio.Reader) ([]byte, error)
 	Display(data []byte)
@@ -185,5 +183,3 @@ func readLine(r *bufio.Reader, prompt string) string {
 	line, _ := r.ReadString('\n')
 	return strings.TrimSpace(line)
 }
-
-/*</new funcs>*/

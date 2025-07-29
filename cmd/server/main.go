@@ -4,6 +4,8 @@ import (
 	"log"
 	"net"
 
+	"github.com/patric-chuzhbe/gophkeeper/internal/auth"
+
 	"google.golang.org/grpc"
 
 	"github.com/patric-chuzhbe/gophkeeper/internal/config"
@@ -28,8 +30,10 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	jwtService := auth.NewJWTService(cfg.JWTSecret)
+
 	grpcServer := grpc.NewServer()
-	pb.RegisterVaultServiceServer(grpcServer, servergrpc.NewVaultServer(db))
+	pb.RegisterVaultServiceServer(grpcServer, servergrpc.NewVaultServer(db, jwtService))
 
 	log.Println("gRPC server listening on", cfg.GRPCAddress)
 	if err := grpcServer.Serve(lis); err != nil {

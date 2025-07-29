@@ -15,10 +15,9 @@ import (
 
 type VaultServer struct {
 	pb.UnimplementedVaultServiceServer
-	db *postgresdb.PostgresDB
+	db         *postgresdb.PostgresDB
+	jwtService *auth.JWTService
 }
-
-/*< new funcs>*/
 
 func (s *VaultServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	if req.Login == "" || req.Password == "" {
@@ -59,7 +58,7 @@ func (s *VaultServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 		return nil, status.Errorf(codes.Unauthenticated, "invalid password")
 	}
 
-	token, err := auth.GenerateToken(userID)
+	token, err := s.jwtService.GenerateToken(userID)
 	if err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, "failed to generate token")
@@ -68,12 +67,12 @@ func (s *VaultServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 	return &pb.LoginResponse{Token: token}, nil
 }
 
-func NewVaultServer(db *postgresdb.PostgresDB) *VaultServer {
-	return &VaultServer{db: db}
+func NewVaultServer(db *postgresdb.PostgresDB, jwtService *auth.JWTService) *VaultServer {
+	return &VaultServer{db: db, jwtService: jwtService}
 }
 
 func (s *VaultServer) AddRecord(ctx context.Context, req *pb.AddRecordRequest) (*pb.AddRecordResponse, error) {
-	userID, err := auth.ParseToken(req.Token)
+	userID, err := s.jwtService.ParseToken(req.Token)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 	}
@@ -95,7 +94,7 @@ func (s *VaultServer) AddRecord(ctx context.Context, req *pb.AddRecordRequest) (
 }
 
 func (s *VaultServer) GetRecords(ctx context.Context, req *pb.GetRecordsRequest) (*pb.GetRecordsResponse, error) {
-	userID, err := auth.ParseToken(req.Token)
+	userID, err := s.jwtService.ParseToken(req.Token)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 	}
@@ -118,5 +117,3 @@ func (s *VaultServer) GetRecords(ctx context.Context, req *pb.GetRecordsRequest)
 
 	return result, nil
 }
-
-/*</new funcs>*/
