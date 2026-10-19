@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package vault;
+
+option go_package = "github.com/patric-chuzhbe/gophkeeper/internal/servergrpc/proto";
+
+service VaultService {
+  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc AddRecord (AddRecordRequest) returns (AddRecordResponse);
+  rpc GetRecords (GetRecordsRequest) returns (GetRecordsResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+}
+
+message RegisterRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message RegisterResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message LoginRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}
+
+message AddRecordRequest {
+  string token = 1;
+  string password = 2;
+  VaultRecord record = 3;
+}
+
+message AddRecordResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetRecordsRequest {
+  string token = 1;
+}
+
+message GetRecordsResponse {
+  repeated VaultRecord records = 1;
+}
+
+message VaultRecord {
+  string type = 1;
+  map<string, string> meta = 2;
+  bytes data = 3;
+  bytes nonce = 4;
+}
